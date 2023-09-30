@@ -7,31 +7,23 @@ const getItems = wrapperErrorHandler(async (req, res, next) => {
     const limit = parseInt(req.query.limit || 10);
     const page = parseInt(req.query.page || 1);
     const count = await Item.count()
-    Item.find({}, { "__v": false }).limit(limit).skip((page - 1) * limit)
-        .then((items) => {
-            res.json({
-                statusCode: 200,
-                status: httpStatusText.SUCCESS,
-                data: items,
-                metadata: {
-                    page: page,
-                    limit: limit,
-                    totalItems: count
-                }
-            });
-        })
-        .catch((err) => {
-            next({
-                statusCode: 500,
-                message: err.message,
-            });
-        });
+    const items = await Item.find({}, { "__v": false }).limit(limit).skip((page - 1) * limit)
+    res.json({
+        statusCode: 200,
+        status: httpStatusText.SUCCESS,
+        data: items,
+        metadata: {
+            page: page,
+            limit: limit,
+            totalItems: count
+        }
+    });
 });
 const getItem = wrapperErrorHandler(async (req, res, next) => {
 
     const item = await Item.findById(req.params.id, { "__v": false });
     if (!item) {
-        const error = AppErrors.create("Item not found", 404, httpStatusText.FAIL)
+        const error = new AppErrors("Item not found", 404)
         return next(error);
     }
     res.json({
@@ -44,11 +36,9 @@ const getItem = wrapperErrorHandler(async (req, res, next) => {
 const createItem = wrapperErrorHandler(async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return next({
-            statusText: httpStatusText.FAIL,
-            data: errors.array(),
-            statusCode: 400,
-        });
+        const error = new AppErrors(errors.array(), 400);
+        return next(error);
+
     }
     const item = new Item(req.body);
     await item.save();
@@ -61,26 +51,19 @@ const createItem = wrapperErrorHandler(async (req, res, next) => {
 const updateItem = wrapperErrorHandler(async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return next({
-            statusText: httpStatusText.FAIL,
-            data: errors.array(),
-            statusCode: 400,
-        });
+        const error = new AppErrors(errors.array(), 400);
+        return next(error);
     }
     const ID = req.params.id;
     const updateRes = await Item.updateOne({ _id: ID }, { $set: { ...req.body } })
     if (updateRes.modifiedCount === 0) {
-        return next({
-            statusCode: 400,
-            message: `Invalid data`,
-        })
+        const error = new AppErrors("Invalid data", 400);
+        return next(error)
     }
     const updatedItem = await Item.findById(ID);
     if (!updatedItem) {
-        return next({
-            statusCode: 404,
-            message: `Item not found`,
-        })
+        const error = new AppErrors("Item not found", 404);
+        return next(error)
     }
     res.status(200).json({
         status: httpStatusText.SUCCESS,
@@ -90,27 +73,18 @@ const updateItem = wrapperErrorHandler(async (req, res, next) => {
 })
 
 const deleteItem = wrapperErrorHandler(async (req, res, next) => {
-    Item.deleteOne({ _id: req.params.id })
-        .then((response) => {
-            if (response && response.deletedCount) {
-                res.status(200).json({
-                    message: `Item with ID: ${req.params.id} deleted`,
-                    status: httpStatusText.SUCCESS,
-                    data: null,
-                });
-            } else {
-                next({
-                    statusCode: 404,
-                    message: "Item not found",
-                })
-            }
-        })
-        .catch((err) => {
-            next({
-                statusCode: 500,
-                message: err.message,
-            })
+    const response = await Item.deleteOne({ _id: req.params.id })
+    if (response && response.deletedCount) {
+        res.status(200).json({
+            message: `Item with ID: ${req.params.id} deleted`,
+            status: httpStatusText.SUCCESS,
+            data: null,
         });
+    } else {
+        const error = new AppErrors("Item not found", 404);
+        next(error);
+    }
+
 })
 export default {
     getItems,

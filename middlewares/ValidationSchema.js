@@ -1,5 +1,6 @@
 import { body } from "express-validator";
 import mongoose from "mongoose";
+import AppErrors from "../utils/AppErrors.js";
 
 const createNewItemSchema = () => {
     return [
@@ -40,9 +41,8 @@ const checkItemID = (req, res, next) => {
     if (mongoose.isValidObjectId(req.params.id)) {
         next();
     } else {
-        const error = new Error(`Invalid item ID: #${req.params.id}`);
-        error.statusCode = 400;
-        next(error);
+        const error = new AppErrors(`Invalid item ID #${req.params.id}`, 400);
+        return next(error);
     }
 }
 export default { createNewItemSchema, checkItemID,updateItemSchema }
