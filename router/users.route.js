@@ -15,6 +15,8 @@ router.route('/register')
 
 router.route('/login')
     .post(userController.login);
+router.route('/profile')
+    .get(verifyToken, userController.profile);
 router.route('/logout')
     .post(userController.logout);
 router.route('/delete/:id')

@@ -25,11 +25,11 @@ app.use((err, _, res, _1) => {
     const msgType = err.message instanceof Array ? "array" : typeof err.message
     res.status(reCode).json({
         status: reCode === 500?"Internal server error":resStatus,
-        code: reCode,
+        statusCode: reCode,
         message: msgType === 'array' ? err.message.map(el => el.msg).join(', ') : err.message,
         messages: msgType === 'array' ? err.message.map(el => el.msg): [err.message],
         data: err.data,
-    })
+    }).end()
 })
 app.listen(process.env.PORT || 3000, () => {
     console.log("listening on port: " + process.env.PORT || 3000);

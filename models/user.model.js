@@ -1,13 +1,9 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
-    first_name: {
+    name: {
         type: String,
-        required: [true, "Please enter your first name"]
-    },
-    last_name: {
-        type: String,
-        required: [true, "Please enter your last name"]
+        required: [true, "Please enter your name"]
     },
     email: {
         type: String,
@@ -26,6 +22,13 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    },
+    token:{
+        type:String
+    }
 });
 
 export default mongoose.model('User', userSchema);

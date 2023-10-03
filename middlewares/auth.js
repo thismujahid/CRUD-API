@@ -1,7 +1,8 @@
 import Jwt from "jsonwebtoken";
 import AppErrors from "../utils/AppErrors.js";
+import userModel from "../models/user.model.js";
 
-export function verifyToken(req, res, next) {
+export async function verifyToken(req, res, next) {
     const authHeader = req.headers['Authorization'] || req.headers['authorization'];
     if (!authHeader) {
         const error = new AppErrors("No authorization token provided", 401)
@@ -18,9 +19,10 @@ export function verifyToken(req, res, next) {
     }
     try {
         Jwt.verify(token, process.env.JWT_SECRET);
+        req.access_token = token;
         next();
     } catch (err) {
-        const error = new AppErrors(`Unauthorized: ${err.message ? err.message.replace('jwt', 'token'):''}`, 401)
+        const error = new AppErrors(`Unauthorized: ${err.message ? err.message.replace('jwt', 'token') : ''}`, 401)
         return next(error);
     }
 }

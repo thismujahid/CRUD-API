@@ -4,6 +4,7 @@ import User from "../models/user.model.js";
 import { createReponseData, generateJWT } from "../utils/helpers.js";
 import AppErrors from "../utils/AppErrors.js";
 import { Password } from "../utils/PasswordCrpt.js";
+import Jwt from 'jsonwebtoken';
 const getAllUsers = wrapperErrorHandler(async (req, res) => {
     const limit = parseInt(req.query.limit || 10);
     const page = parseInt(req.query.page || 1);
@@ -83,21 +84,51 @@ const login = wrapperErrorHandler(async (req, res, next) => {
         _id: user._id,
         email: user.email
     });
+    await User.findByIdAndUpdate(user._id, { token: token });
     res.json(
         createReponseData({
             code: 200,
             data: {
                 user: {
-                    first_name: user.first_name,
-                    last_name: user.last_name,
+                    name: user.name,
                     email: user.email,
+                    role: user.role,
+                    created_at: user.createdAt,
+                    updated_at: user.updatedAt
                 },
                 token: token
             },
         })
     )
 });
-
+const profile = wrapperErrorHandler(async (req, res, next) => {
+    const decoded = Jwt.verify(req.access_token, process.env.JWT_SECRET);
+    const user = await User.findOne({ email: decoded.email });
+    if (!user) {
+        const error = new AppErrors("No user found", 400);
+        return next(error);
+    }
+    const token = await generateJWT({
+        _id: user._id,
+        email: user.email
+    });
+    await User.findByIdAndUpdate(user._id, { token: token });
+    res.json(
+        createReponseData({
+            code: 200,
+            data: {
+                user: {
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    created_at: user.createdAt,
+                    updated_at: user.updatedAt
+                },
+                token: token
+            },
+        })
+    )
+});
 const logout = (req, res) => {
 
     res.status(200).json(
@@ -128,5 +159,6 @@ export default {
     register,
     login,
     deleteUser,
-    logout
+    logout,
+    profile
 }
